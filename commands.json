@@ -1,3 +1,7 @@
+Param(
+  [string]$sfttoken
+)
 get-process
 hostname
 date
+write output "$sfttoken"
