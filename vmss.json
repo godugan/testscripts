@@ -1,4 +1,1 @@
-Param(
-  [string]$sfttoken
-  )
 write-otput '$sfttoken'
