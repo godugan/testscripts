@@ -1,1 +1,1 @@
-write-output '$sfttoken'
+write-output $sfttoken
