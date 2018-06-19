@@ -1,4 +1,6 @@
 write-output $enrollment_token
+$hostname = hostname
+write-output = "hostname $hostname"
 ### OS Check
 $OSversion = (Get-WmiObject -class Win32_OperatingSystem).Caption
 
