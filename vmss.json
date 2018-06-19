@@ -1,2 +1,100 @@
 write-output $enrollment_token
-write-output "did this work"
+### OS Check
+$OSversion = (Get-WmiObject -class Win32_OperatingSystem).Caption
+
+If ($OSversion -notlike "*Windows Server*"){
+    Write-Output "Unsupported OS: $OSversion"
+    return
+    }
+Else{
+    Write-Output "OS is a supported version: $OSversion"
+
+
+#variables
+
+$limit1 = (Get-Date).AddDays(-90)
+$limit2 = (Get-Date).AddDays(-60)
+$limit3 = (Get-Date).AddDays(-30)
+$path="C:\Windows\Temp"
+$NumOfTempfiles=(Get-ChildItem $path).Count
+
+$scaleft_path = "C:\windows\system32\config\systemprofile\AppData\Local\ScaleFT\"; 
+$enrollment_token_path = $scaleft_path + "enrollment.token"; 
+$device_token_path = $scaleft_path + "state\device.token";
+$sftconfigfilepath = $scaleft_path + "sftd.yaml"
+
+if ($NumOfTempfiles -gt 65000){
+    Write-Output "Greater than 65000 files in temp direcory"
+    Write-Output "Deleting temp files that have not been modified for > 90 days"
+    # Delete files older than the $limit.
+    Get-ChildItem -Path $path -Recurse -Force | Where-Object { !$_.PSIsContainer -and $_.LastWriteTime -lt $limit1} | Remove-Item -Force
+    }
+if ($NumOfTempfiles -gt 65000){
+    Write-Output "There are still more than 65000 files in temp direcory"
+    Write-Output "Deleting temp files that have not been modified for > 60 days"
+    # Delete files older than the $limit.
+    Get-ChildItem -Path $path -Recurse -Force | Where-Object { !$_.PSIsContainer -and $_.LastWriteTime -lt $limit2} | Remove-Item -Force
+    }
+if ($NumOfTempfiles -gt 65000){
+    Write-Output "There are still more than 65000 files in temp direcory"
+    Write-Output "Deleting temp files that have not been modified for > 30 days"
+    # Delete files older than the $limit.
+    Get-ChildItem -Path $path -Recurse -Force | Where-Object { !$_.PSIsContainer -and $_.LastWriteTime -lt $limit3} | Remove-Item -Force
+    }
+
+
+if (Test-Path $scaleft_path){
+	if (Test-Path $device_token_path){
+		Get-ChildItem $device_token_path | % { "Deleting [$($_.name)] LastWrite: [$($_.lastwritetime)]" }
+		Remove-Item $device_token_path
+	}
+	if (Test-Path $enrollment_token_path){
+		Get-ChildItem $enrollment_token_path | % { "Deleting [$($_.name)] LastWrite: [$($_.lastwritetime)]" }
+		Remove-Item $enrollment_token_path
+	}
+}
+else
+{
+	New-Item -ItemType directory -Path (Split-Path $enrollment_token_path -Parent) -Force | % { "Created [$($_.name)] LastWrite: $($_.lastwritetime)" }
+}
+
+$enrollment_token | Out-File $enrollment_token_path -Encoding "ASCII" -Force
+Get-ChildItem $enrollment_token_path | % { "Created [$($_.name)] LastWrite: [$($_.lastwritetime)]" }
+
+# Install ScaleFT Server Tools
+$installer_url = "https://dist.scaleft.com/server-tools/windows/latest/ScaleFT-Server-Tools-latest.msi"
+$installer_path = [System.IO.Path]::ChangeExtension([System.IO.Path]::GetTempFileName(), ".msi")
+
+(New-Object System.Net.WebClient).DownloadFile($installer_url, $installer_path)
+
+Write-Host -NoNewline "Waiting for Install ($installer_path).."
+Start-Process C:\Windows\System32\msiexec.exe -ArgumentList "/qn /I $installer_path" -Wait 
+Write-Host "Done."
+
+
+#### Restart Service
+Write-Host -NoNewline "Restarting Service.."
+Restart-Service scaleft-server-tools -Force
+Write-Host "Done."
+
+Write-Host -NoNewline "Waiting for Enrollment.."
+$count = 0
+while (((Test-Path $device_token_path) -eq $false) -and $count -lt 30)
+{ $count++
+    Write-Host -NoNewline "."
+    Start-Sleep -Seconds 1
+}
+if ((Test-Path $device_token_path) -eq $false){
+	Write-Host "Error."
+	$msg = "Info: device.token was not created within $count seconds."
+    Write-Host $msg
+	Write-Error $msg
+	throw [System.IO.FileNotFoundException] $msg
+}
+else
+{
+    Write-Host "Done."
+    Get-ChildItem $device_token_path | % { "Info: device.token Created [$($_.name)] LastWrite: [$($_.lastwritetime)]" }
+}
+
+}
