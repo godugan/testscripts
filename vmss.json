@@ -1,1 +1,2 @@
-write-output $sfttoken
+write-output $enrollment_token
+write-output "did this work"
