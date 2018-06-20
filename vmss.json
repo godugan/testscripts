@@ -1,3 +1,4 @@
+Param($enrollment_token)
 write-output $enrollment_token
 $hostname = hostname
 write-output = "hostname $hostname"
