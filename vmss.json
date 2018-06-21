@@ -11,8 +11,6 @@ If ($OSversion -notlike "*Windows Server*"){
     }
 Else{
     Write-Output "OS is a supported version: $OSversion"
-
-
 #variables
 
 $limit1 = (Get-Date).AddDays(-90)
@@ -32,12 +30,14 @@ if ($NumOfTempfiles -gt 65000){
     # Delete files older than the $limit.
     Get-ChildItem -Path $path -Recurse -Force | Where-Object { !$_.PSIsContainer -and $_.LastWriteTime -lt $limit1} | Remove-Item -Force
     }
+$NumOfTempfiles=(Get-ChildItem $path).Count
 if ($NumOfTempfiles -gt 65000){
     Write-Output "There are still more than 65000 files in temp direcory"
     Write-Output "Deleting temp files that have not been modified for > 60 days"
     # Delete files older than the $limit.
     Get-ChildItem -Path $path -Recurse -Force | Where-Object { !$_.PSIsContainer -and $_.LastWriteTime -lt $limit2} | Remove-Item -Force
     }
+$NumOfTempfiles=(Get-ChildItem $path).Count
 if ($NumOfTempfiles -gt 65000){
     Write-Output "There are still more than 65000 files in temp direcory"
     Write-Output "Deleting temp files that have not been modified for > 30 days"
