@@ -1,1 +1,2 @@
-hostname
+Param($enrollment_token)
+write-output $enrollment_token
