@@ -19,7 +19,7 @@ $OSversion = (Get-WmiObject -class Win32_OperatingSystem).Caption
 ### See if scaleft is already installed
 $serviceStauts = get-service scaleft-server-tools
 
-	elseif ($serviceStauts.Status -eq "Running" -and (Test-Path $device_token_path))
+	If ($serviceStauts.Status -eq "Running" -and (Test-Path $device_token_path))
 	{
 		write-output "scaleft is already installed and the service is running, no work required...exiting"
 		return		
